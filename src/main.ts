@@ -1,6 +1,7 @@
 import "@mediapipe/face_detection";
 import "@tensorflow/tfjs-core";
 import "@tensorflow/tfjs-backend-webgl";
+import "./main.css";
 
 import * as faceDetection from "@tensorflow-models/face-detection";
 
@@ -21,15 +22,22 @@ const x = <T>(value: T | null | undefined): T => {
   const video = document.createElement("video");
   video.srcObject = stream;
   await video.play();
-  video.style.transform = "scaleX(-1)";
-  document.body.append(video);
+  const width = video.videoWidth;
+  const height = video.videoHeight;
+  //   document.body.append(video);
 
-  const canvas = document.createElement("canvas");
-  canvas.style.transform = "scaleX(-1)";
-  document.body.append(canvas);
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  const ctx = x(canvas.getContext("2d"));
+  const debugCanvas = document.createElement("canvas");
+  debugCanvas.style.transform = "scaleX(-1)";
+  document.body.append(debugCanvas);
+  debugCanvas.width = width;
+  debugCanvas.height = height;
+  const debug = x(debugCanvas.getContext("2d"));
+
+  const outCanvas = document.createElement("canvas");
+  document.body.append(outCanvas);
+  outCanvas.width = width;
+  outCanvas.height = height;
+  const out = x(outCanvas.getContext("2d"));
 
   const faceDetector = await faceDetection.createDetector(
     faceDetection.SupportedModels.MediaPipeFaceDetector,
@@ -41,20 +49,37 @@ const x = <T>(value: T | null | undefined): T => {
 
   const loop = async () => {
     const faces = await faceDetector.estimateFaces(video);
-    ctx.drawImage(video, 0, 0);
+
+    debug.drawImage(video, 0, 0);
     for (const face of faces) {
-      ctx.strokeStyle = "lime";
-      ctx.strokeRect(
+      debug.strokeStyle = "lime";
+      debug.strokeRect(
         face.box.xMin,
         face.box.yMin,
         face.box.width,
         face.box.height
       );
-      ctx.fillStyle = "aqua";
+      debug.fillStyle = "aqua";
       for (const { x, y } of face.keypoints) {
-        ctx.fillRect(x - 2, y - 2, 5, 5);
+        debug.fillRect(x - 2, y - 2, 5, 5);
       }
     }
+
+    const [face] = faces;
+    if (face) {
+      out.drawImage(
+        video,
+        face.box.xMin,
+        face.box.yMin,
+        face.box.width,
+        face.box.height,
+        0,
+        0,
+        out.canvas.width,
+        out.canvas.height
+      );
+    }
+
     requestAnimationFrame(loop);
   };
   loop();
