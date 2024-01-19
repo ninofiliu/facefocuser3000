@@ -18,13 +18,21 @@ const x = <T>(value: T | null | undefined): T => {
 // 5 leftEarTragion
 
 (async () => {
+  const videos = Array(2)
+    .fill(null)
+    .map(() => document.createElement("video"));
+
+  videos[0].src = "/vids/bowie.webm";
+  videos[0].autoplay = true;
+  videos[0].loop = true;
+  videos[0].muted = true;
+
   const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-  const video = document.createElement("video");
-  video.srcObject = stream;
-  await video.play();
-  const width = video.videoWidth;
-  const height = video.videoHeight;
-  //   document.body.append(video);
+  videos[1].srcObject = stream;
+  videos[1].muted = true;
+  await videos[1].play();
+  const width = videos[1].videoWidth;
+  const height = videos[1].videoHeight;
 
   const debugCanvas = document.createElement("canvas");
   debugCanvas.style.transform = "scaleX(-1)";
@@ -47,8 +55,15 @@ const x = <T>(value: T | null | undefined): T => {
     }
   );
 
+  let f = 0;
   const loop = async () => {
-    const faces = await faceDetector.estimateFaces(video);
+    // const video = videos[Math.floor(f / 60) % 2];
+    let video = videos[1];
+    let faces = await faceDetector.estimateFaces(video);
+    if (!faces.length) {
+      video = videos[0];
+      faces = await faceDetector.estimateFaces(video);
+    }
 
     debug.drawImage(video, 0, 0);
     for (const face of faces) {
@@ -81,6 +96,7 @@ const x = <T>(value: T | null | undefined): T => {
     }
 
     requestAnimationFrame(loop);
+    f++;
   };
   loop();
 })();
