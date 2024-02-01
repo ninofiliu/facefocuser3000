@@ -1,10 +1,6 @@
 import fragmentShaderSource from "./fragment.glsl?raw";
+import { x } from "./shorts";
 import vertexShaderSource from "./vertex.glsl?raw";
-
-const x = <T>(x: T | null | undefined): T => {
-  if (x == null) throw new Error("should not be nullish");
-  return x;
-};
 
 const createShader = (
   gl: WebGL2RenderingContext,
@@ -33,22 +29,9 @@ const createProgram = (
   return program;
 };
 
-const getDebugImage = () => {
-  const canvas = document.createElement("canvas");
-  canvas.width = 4;
-  canvas.height = 4;
-  const ctx = x(canvas.getContext("2d"));
-  for (let x = 0; x < 4; x++) {
-    for (let y = 0; y < 4; y++) {
-      ctx.fillStyle = `rgba(${64 * x},${64 * y},0)`;
-      ctx.fillRect(x, y, 1, 1);
-    }
-  }
-  return canvas.toDataURL();
-};
-
-const canvas = document.createElement("canvas");
-document.body.append(canvas);
+export const canvas = document.createElement("canvas");
+canvas.width = innerWidth;
+canvas.height = innerHeight;
 const gl = x(canvas.getContext("webgl2"));
 
 const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
@@ -88,11 +71,13 @@ gl.enableVertexAttribArray(locations.a_texcoord);
 gl.vertexAttribPointer(locations.a_texcoord, 2, gl.FLOAT, true, 0, 0);
 
 const texture = gl.createTexture();
-const img = document.createElement("img");
-img.src = getDebugImage();
-img.addEventListener("load", () => {
+
+export const setTexture = (source: TexImageSource) => {
   gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
   gl.generateMipmap(gl.TEXTURE_2D);
+};
+
+export const draw = () => {
   gl.drawArrays(gl.TRIANGLES, 0, 6);
-});
+};

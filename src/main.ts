@@ -5,10 +5,8 @@ import "./main.css";
 
 import * as faceDetection from "@tensorflow-models/face-detection";
 
-const x = <T>(value: T | null | undefined): T => {
-  if (value == null) throw new Error("should not be nullish");
-  return value;
-};
+import * as glsl from "./glsl";
+import { x } from "./shorts";
 
 // 0 rightEye
 // 1 leftEye
@@ -18,6 +16,9 @@ const x = <T>(value: T | null | undefined): T => {
 // 5 leftEarTragion
 
 (async () => {
+  const width = innerWidth;
+  const height = innerHeight;
+
   const videos = Array(2)
     .fill(null)
     .map(() => document.createElement("video"));
@@ -31,18 +32,15 @@ const x = <T>(value: T | null | undefined): T => {
   videos[1].srcObject = stream;
   videos[1].muted = true;
   await videos[1].play();
-  const width = videos[1].videoWidth;
-  const height = videos[1].videoHeight;
 
   const debugCanvas = document.createElement("canvas");
   debugCanvas.style.transform = "scaleX(-1)";
-  document.body.append(debugCanvas);
-  debugCanvas.width = width;
-  debugCanvas.height = height;
-  const debug = x(debugCanvas.getContext("2d"));
+  // document.body.append(debugCanvas);
+  // debugCanvas.width = width;
+  // debugCanvas.height = height;
 
   const outCanvas = document.createElement("canvas");
-  document.body.append(outCanvas);
+  // document.body.append(outCanvas);
   outCanvas.width = width;
   outCanvas.height = height;
   const out = x(outCanvas.getContext("2d"));
@@ -55,6 +53,11 @@ const x = <T>(value: T | null | undefined): T => {
     }
   );
 
+  glsl.canvas.width = width;
+  glsl.canvas.height = height;
+  document.body.append(glsl.canvas);
+
+  // eslint-disable-next-line unused-imports/no-unused-vars
   let f = 0;
   const loop = async () => {
     // const video = videos[Math.floor(f / 60) % 2];
@@ -63,21 +66,6 @@ const x = <T>(value: T | null | undefined): T => {
     if (!faces.length) {
       video = videos[0];
       faces = await faceDetector.estimateFaces(video);
-    }
-
-    debug.drawImage(video, 0, 0);
-    for (const face of faces) {
-      debug.strokeStyle = "lime";
-      debug.strokeRect(
-        face.box.xMin,
-        face.box.yMin,
-        face.box.width,
-        face.box.height
-      );
-      debug.fillStyle = "aqua";
-      for (const { x, y } of face.keypoints) {
-        debug.fillRect(x - 2, y - 2, 5, 5);
-      }
     }
 
     const [face] = faces;
@@ -90,9 +78,11 @@ const x = <T>(value: T | null | undefined): T => {
         face.box.height,
         0,
         0,
-        out.canvas.width,
-        out.canvas.height
+        width,
+        height
       );
+      glsl.setTexture(out.canvas);
+      glsl.draw();
     }
 
     requestAnimationFrame(loop);
